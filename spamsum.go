@@ -10,14 +10,13 @@ import (
 )
 
 const (
+	rollingWindow = 7
 	minBlockSize = 3
 	SpamsumLength = 64
+	ReadSize = 8192
+	offset32 = uint32(0x28021967)
+	prime32  = uint32(16777619)
 )
-
-type Summable interface {
-	io.ReadSeeker
-	Size() int64;
-}
 
 type SpamSum struct {
 	blocksize uint32
@@ -38,7 +37,6 @@ func HashBytes (b []byte) (* SpamSum, error) {
 	return HashReadSeeker(wrapper, wrapper.Size());
 }
 
-
 const b64 string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 func HashReadSeeker (source io.ReadSeeker, length int64) (* SpamSum, error) {
@@ -49,70 +47,29 @@ func HashReadSeeker (source io.ReadSeeker, length int64) (* SpamSum, error) {
 		sum.blocksize *= 2
 	}
 
+	sss := spamsumState{}
 source_iteration:for {
-		rolling := newRollHash()
-		left := newModifiedFNV()
-		right := newModifiedFNV()
-		leftIndex, rightIndex := 0, 0
+		for i := range(sss.window) { sss.window[i] = 0 }
+		sss.rollingSum = 0
+		sss.h2 = 0
+		sss.shiftHash = 0
+		sss.position = 0
+
+		sss.left = offset32
+		sss.right = offset32
+		sss.leftIndex, sss.rightIndex = 0, 0
 
 		if _, err := source.Seek(0, 0); err != nil {
 			return nil, err
 		}
-		block := make([]byte, sum.blocksize)
+		block := make([]byte, ReadSize)
 
 	block_read_loop: for {
 			var num int; var err error
 			if num, err = source.Read(block); num == 0 {
 				break block_read_loop
 			} else {
-				for i := 0; i < num; {
-					l, r, j := false, false, i
-
-				scan_trigger_condition: for ; j < num; {
-						rolling.Write([]byte{ block[j] });
-
-						roll := rolling.Sum32()
-						// Trigger condition 1
-						if roll % sum.blocksize == (sum.blocksize - 1) {
-							l = true
-						}
-
-						// Trigger condition 2
-						if roll % (sum.blocksize * 2) == ((sum.blocksize * 2) - 1) {
-							r = true
-						}
-
-						j++
-
-						if (l || r) {
-							break scan_trigger_condition
-						}
-
-					}
-
-					left.Write(block[i:j])
-					right.Write(block[i:j])
-
-					if l {
-						sum.leftPart[leftIndex] = b64[left.Sum32() % 64]
-						if leftIndex < SpamsumLength - 1 {
-							leftIndex += 1
-							left = newModifiedFNV()
-						}
-					}
-
-					if r {
-						sum.rightPart[rightIndex] = b64[right.Sum32() % 64]
-						if rightIndex < (SpamsumLength/2) - 1 {
-							rightIndex += 1
-							right = newModifiedFNV()
-						}
-					}
-
-
-					i = j
-				}
-
+				processBlock(block, num, &sss, sum)
 			}
 
 			if err != nil {
@@ -120,12 +77,13 @@ source_iteration:for {
 			}
 		}
 
-		if rolling.Sum32() != 0 {
-			sum.leftPart[leftIndex] = b64[left.Sum32() % 64]
-			sum.rightPart[rightIndex] = b64[right.Sum32() % 64]
+		roll := sss.rollingSum + sss.h2 + sss.shiftHash
+		if roll != 0 {
+			sum.leftPart[sss.leftIndex] = b64[sss.left % 64]
+			sum.rightPart[sss.rightIndex] = b64[sss.right % 64]
 		}
 
-		if sum.blocksize > minBlockSize && leftIndex < (SpamsumLength / 2) {
+		if sum.blocksize > minBlockSize && sss.leftIndex < (SpamsumLength / 2) {
 			sum.blocksize /= 2
 		} else {
 			break source_iteration
@@ -134,4 +92,57 @@ source_iteration:for {
 
 
 	return sum, nil
+}
+
+type spamsumState struct {
+	// fields for the rolling hash
+	window [rollingWindow]byte
+	rollingSum, h2, shiftHash, position uint32
+
+	// FNV-1 style hash fields
+	left, right uint32
+	leftIndex, rightIndex int
+}
+
+func processBlock(block []byte, length int, sss * spamsumState, sum * SpamSum) {
+	for i := 0; i < length; i++ {
+		sss.h2 -= sss.rollingSum
+		sss.h2 += rollingWindow * uint32(block[i])
+
+		sss.rollingSum += uint32(block[i])
+		sss.rollingSum -= uint32(sss.window[sss.position % rollingWindow])
+
+		sss.window[sss.position % rollingWindow] = block[i]
+		sss.position += 1
+
+		sss.shiftHash <<= 5
+		sss.shiftHash ^= uint32(block[i])
+
+		roll := sss.rollingSum + sss.h2 + sss.shiftHash
+
+		sss.left *= prime32
+		sss.left ^= uint32(block[i])
+
+		sss.right *= prime32
+		sss.right ^= uint32(block[i])
+
+
+		// Trigger condition 1
+		if roll % sum.blocksize == (sum.blocksize - 1) {
+			sum.leftPart[sss.leftIndex] = b64[sss.left % 64]
+			if sss.leftIndex < SpamsumLength - 1 {
+				sss.leftIndex += 1
+				sss.left = offset32
+			}
+		}
+
+		// Trigger condition 2
+		if roll % (sum.blocksize * 2) == ((sum.blocksize * 2) - 1) {
+			sum.rightPart[sss.rightIndex] = b64[sss.right % 64]
+			if sss.rightIndex < (SpamsumLength/2) - 1 {
+				sss.rightIndex += 1
+				sss.right = offset32
+			}
+		}
+	}
 }
