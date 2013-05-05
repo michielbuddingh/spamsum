@@ -22,10 +22,11 @@ type SpamSum struct {
 	blocksize uint32
 	leftPart [SpamsumLength]byte
 	rightPart [SpamsumLength / 2]byte
+	leftIndex, rightIndex int
 }
 
 func (ss * SpamSum) String() string {
-	return fmt.Sprintf("%d:%s:%s", ss.blocksize, string(ss.leftPart[:]), string(ss.rightPart[:]))
+	return fmt.Sprintf("%d:%s:%s", ss.blocksize, string(ss.leftPart[:ss.leftIndex]), string(ss.rightPart[:ss.rightIndex]))
 }
 
 func (ss * SpamSum) BlockSize() int {
@@ -57,7 +58,7 @@ source_iteration:for {
 
 		sss.left = offset32
 		sss.right = offset32
-		sss.leftIndex, sss.rightIndex = 0, 0
+		sum.leftIndex, sum.rightIndex = 0, 0
 
 		if _, err := source.Seek(0, 0); err != nil {
 			return nil, err
@@ -79,11 +80,13 @@ source_iteration:for {
 
 		roll := sss.rollingSum + sss.h2 + sss.shiftHash
 		if roll != 0 {
-			sum.leftPart[sss.leftIndex] = b64[sss.left % 64]
-			sum.rightPart[sss.rightIndex] = b64[sss.right % 64]
+			sum.leftPart[sum.leftIndex] = b64[sss.left % 64]
+			sum.rightPart[sum.rightIndex] = b64[sss.right % 64]
+			sum.leftIndex += 1
+			sum.rightIndex += 1
 		}
 
-		if sum.blocksize > minBlockSize && sss.leftIndex < (SpamsumLength / 2) {
+		if sum.blocksize > minBlockSize && (sum.leftIndex - 1) < (SpamsumLength / 2) {
 			sum.blocksize /= 2
 		} else {
 			break source_iteration
@@ -101,7 +104,6 @@ type spamsumState struct {
 
 	// FNV-1 style hash fields
 	left, right uint32
-	leftIndex, rightIndex int
 }
 
 func processBlock(block []byte, length int, sss * spamsumState, sum * SpamSum) {
@@ -129,18 +131,18 @@ func processBlock(block []byte, length int, sss * spamsumState, sum * SpamSum) {
 
 		// Trigger condition 1
 		if roll % sum.blocksize == (sum.blocksize - 1) {
-			sum.leftPart[sss.leftIndex] = b64[sss.left % 64]
-			if sss.leftIndex < SpamsumLength - 1 {
-				sss.leftIndex += 1
+			sum.leftPart[sum.leftIndex] = b64[sss.left % 64]
+			if sum.leftIndex < SpamsumLength - 1 {
+				sum.leftIndex += 1
 				sss.left = offset32
 			}
 		}
 
 		// Trigger condition 2
 		if roll % (sum.blocksize * 2) == ((sum.blocksize * 2) - 1) {
-			sum.rightPart[sss.rightIndex] = b64[sss.right % 64]
-			if sss.rightIndex < (SpamsumLength/2) - 1 {
-				sss.rightIndex += 1
+			sum.rightPart[sum.rightIndex] = b64[sss.right % 64]
+			if sum.rightIndex < (SpamsumLength/2) - 1 {
+				sum.rightIndex += 1
 				sss.right = offset32
 			}
 		}
