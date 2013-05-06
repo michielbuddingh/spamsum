@@ -51,17 +51,8 @@ func HashReadSeeker(source io.ReadSeeker, length int64) (*SpamSum, error) {
 	sss := spamsumState{}
 source_iteration:
 	for {
-		for i := range sss.window {
-			sss.window[i] = 0
-		}
-		sss.rollingSum = 0
-		sss.h2 = 0
-		sss.shiftHash = 0
-		sss.position = 0
-
-		sss.left = offset32
-		sss.right = offset32
-		sum.leftIndex, sum.rightIndex = 0, 0
+		sss.reset()
+		sum.reset()
 
 		if _, err := source.Seek(0, 0); err != nil {
 			return nil, err
@@ -83,13 +74,7 @@ source_iteration:
 			}
 		}
 
-		roll := sss.rollingSum + sss.h2 + sss.shiftHash
-		if roll != 0 {
-			sum.leftPart[sum.leftIndex] = b64[sss.left%64]
-			sum.rightPart[sum.rightIndex] = b64[sss.right%64]
-			sum.leftIndex += 1
-			sum.rightIndex += 1
-		}
+		writeTail(&sss, sum)
 
 		if sum.blocksize > minBlockSize && (sum.leftIndex-1) < (SpamsumLength/2) {
 			sum.blocksize /= 2
@@ -150,4 +135,40 @@ func processBlock(block []byte, length int, sss *spamsumState, sum *SpamSum) {
 			}
 		}
 	}
+}
+
+func writeTail(sss *spamsumState, sum *SpamSum) {
+	roll := sss.rollingSum + sss.h2 + sss.shiftHash
+	if roll != 0 {
+		sum.leftPart[sum.leftIndex] = b64[sss.left%64]
+		sum.rightPart[sum.rightIndex] = b64[sss.right%64]
+		sum.leftIndex += 1
+		sum.rightIndex += 1
+	}
+}
+
+func (sss *spamsumState) reset() {
+	for i := range sss.window {
+		sss.window[i] = 0
+	}
+
+	sss.rollingSum = 0
+	sss.h2 = 0
+	sss.shiftHash = 0
+	sss.position = 0
+
+	sss.left = offset32
+	sss.right = offset32
+}
+
+func (sum *SpamSum) reset() {
+	for i := range sum.leftPart {
+		sum.leftPart[i] = 0
+	}
+
+	for i := range sum.rightPart {
+		sum.rightPart[i] = 0
+	}
+
+	sum.leftIndex, sum.rightIndex = 0, 0
 }
