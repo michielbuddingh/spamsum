@@ -1,3 +1,6 @@
+// Copyright 2013, Michiel Buddingh, All rights reserved.
+// Use of this code is governed by version 2.0 or later of the Apache
+// License, available at http://www.apache.org/licenses/LICENSE-2.0
 package spamsum
 
 import (
@@ -10,35 +13,30 @@ type SpamStreamSum struct {
 }
 
 func New(blockSize uint32) hash.Hash {
-	sum := new(SpamStreamSum);
+	sum := new(SpamStreamSum)
 
-	sum.rollingSum = 0
-	sum.h2 = 0
-	sum.shiftHash = 0
-	sum.position = 0
-
-	sum.left = offset32
-	sum.right = offset32
+	sum.SpamSum.reset()
+	sum.spamsumState.reset()
 
 	sum.blocksize = blockSize
 	return sum
 }
 
-func (sss * SpamStreamSum) Reset() {
+func (sss *SpamStreamSum) Reset() {
 	sss.spamsumState.reset()
 	sss.SpamSum.reset()
 }
 
-func (sss * SpamStreamSum) Size() int {
+func (sss *SpamStreamSum) Size() int {
 	return SpamsumLength
 }
 
-func (sss * SpamStreamSum) Write(block []byte) (int, error) {
+func (sss *SpamStreamSum) Write(block []byte) (int, error) {
 	processBlock(block, len(block), &sss.spamsumState, &sss.SpamSum)
 	return len(block), nil
 }
 
-func (sss * SpamStreamSum) String() (result string) {
+func (sss *SpamStreamSum) String() (result string) {
 	writeTail(&sss.spamsumState, &sss.SpamSum)
 	result = sss.SpamSum.String()
 	sss.leftIndex -= 1
@@ -46,7 +44,7 @@ func (sss * SpamStreamSum) String() (result string) {
 	return
 }
 
-func (sss * SpamStreamSum) Sum(block []byte) (result []byte) {
+func (sss *SpamStreamSum) Sum(block []byte) (result []byte) {
 	var cloneState spamsumState = sss.spamsumState
 	var cloneSum SpamSum = sss.SpamSum
 
