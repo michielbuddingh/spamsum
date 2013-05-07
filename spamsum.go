@@ -138,7 +138,7 @@ func processBlock(block []byte, length int, sss *spamsumState, sum *SpamSum) {
 
 		roll := sss.rollingSum + sss.h2 + sss.shiftHash
 
-		// left and right are Fowler/No/Voll-1 hashes with a
+		// left and right are Fowler/Noll/Vo-1 hashes with a
 		// slightly different starting value.
 		sss.left *= prime32
 		sss.left ^= uint32(block[i])
