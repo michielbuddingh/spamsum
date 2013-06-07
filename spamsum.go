@@ -9,8 +9,11 @@ package spamsum
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"unicode"
 )
 
 const (
@@ -207,4 +210,63 @@ func (sum *SpamSum) reset() {
 	}
 
 	sum.leftIndex, sum.rightIndex = 0, 0
+}
+
+func (sum *SpamSum) Scan(state fmt.ScanState, verb rune) error {
+	var blocksize int
+	var leftPart, rightPart, blockPart []byte
+	var err error
+
+	if blockPart, err = state.Token(false, // do not skip spaces
+		func(r rune) bool {
+			return unicode.IsDigit(r)
+		}); err != nil {
+		return err
+	} else if len(blockPart) == 0 {
+		return errors.New("Cannot read block size.")
+	}
+
+	if blocksize, err = strconv.Atoi(string(blockPart)); err != nil {
+		return err
+	} else if blocksize < 3 {
+		return errors.New("Block size too small")
+	}
+
+	if r, _, err := state.ReadRune(); err != nil {
+		return err
+	} else if r != ':' {
+		return errors.New("Invalid token delimiter")
+	}
+
+	if leftPart, err = state.Token(false, // do not skip spaces
+		func(r rune) bool {
+			return (bytes.IndexRune([]byte(b64), r) != -1)
+		}); err != nil {
+		return err
+	} else if len(leftPart) > SpamsumLength {
+		return errors.New("First base64 string too long")
+	}
+
+	if r, _, err := state.ReadRune(); err != nil {
+		return err
+	} else if r != ':' {
+		return errors.New("Invalid token delimiter")
+	}
+
+	if rightPart, err = state.Token(false, // do not skip spaces
+		func(r rune) bool {
+			return (bytes.IndexRune([]byte(b64), r) != -1)
+		}); err != nil {
+		return err
+	} else if len(rightPart) > (SpamsumLength / 2) {
+		return errors.New("Second base64 string too long")
+	}
+
+	sum.blocksize = uint32(blocksize)
+	copy(sum.leftPart[:], leftPart)
+	copy(sum.rightPart[:], rightPart)
+	sum.leftIndex = len(leftPart)
+	sum.rightIndex = len(rightPart)
+
+	return nil
 }

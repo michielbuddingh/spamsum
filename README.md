@@ -5,15 +5,16 @@ spamsum
 
 This is a native go implementation of spamsum.
 
-spamsum was developer by Andrew Tridgell to hash email messages for computationally inexpensive SPAM detection. See <http://junkcode.samba.org/#spamsum>.
+spamsum was developed by Andrew Tridgell to hash email messages for computationally inexpensive SPAM detection. See <http://junkcode.samba.org/#spamsum>.
 
 The state of this package
 -------------------------
 
 * Not ready for general consumption
 * It seems to generate results identical to that of the [spamsum tool](https://junkcode.samba.org/ftp/unpacked/junkcode/spamsum/) and [ssdeep](http://ssdeep.sf.net).  This has only been tested on a small number of files.
-* It is about twice as slow as the spamsum tool; about 40MB/s on a 3Ghz Core i3
-* It does not yet support fuzzy comparison, which is the only reason why you'd want to use a fuzzy hash anyway.
+* It is about twice as slow as the spamsum tool; about 40MB/s on a 3Ghz Core i3.  Use `gccgo` to make the speed difference disappear.
+* Fuzzy comparison is not yet identical to the comparison done by the original spamsum tool, and may be slower
+* Test coverage is poor
 
 How to use
 ----------
@@ -35,7 +36,7 @@ Any errors returned by `HashReadSeeker` will originate from the `io.ReadSeeker` 
 
 ### Alternatively ###
 
-If it is acceptable to set a fixed blocksize beforehand, the `SpamStreamSum` type can be used, which _does_ implement the `hash.Hash` interface.  The `Sum(b []byte) []byte` method is not terribly useful; it will return a slice where the non-zero bytes contain a base64-encoded 6-bit hash for a `BlockSize()`-sized block.  Use the `String()` method to obtain a more useful representation.
+If it is acceptable to set a fixed blocksize beforehand, the `SpamSumWriter` type can be used, which _does_ implement the `hash.Hash` interface.  The `Sum(b []byte) []byte` method is not terribly useful; it will return a slice where the non-zero bytes contain a base64-encoded 6-bit hash for a `BlockSize()`-sized block. Use the `String()` method to obtain a more useful representation.
 
 ### License ###
 

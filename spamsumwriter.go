@@ -8,12 +8,12 @@ import (
 	"hash"
 )
 
-type SpamStreamSum struct {
+type SpamSumWriter struct {
 	SpamSum
 	spamsumState
 }
 
-// New creates a SpamStreamSum with a fixed block size, that
+// New creates a SpamSumWriter with a fixed block size, that
 // implements the hash.Hash interface, and accepts an arbitrary number
 // of bytes through Write().  Note that the SpamSum algorithm does not
 // handle arbitrary length inputs well.  If the input stream is
@@ -21,7 +21,7 @@ type SpamStreamSum struct {
 // the stream will, for most intents and purposes, not generate hash
 // blocks.
 func New(blockSize uint32) hash.Hash {
-	sum := new(SpamStreamSum)
+	sum := new(SpamSumWriter)
 
 	sum.SpamSum.reset()
 	sum.spamsumState.reset()
@@ -30,25 +30,25 @@ func New(blockSize uint32) hash.Hash {
 	return sum
 }
 
-// Reset sets the state of the SpamStreamSum to its initial value,
+// Reset sets the state of the SpamSumWriter to its initial value,
 // while keeping the blocksize parameter as is.
-func (sss *SpamStreamSum) Reset() {
+func (sss *SpamSumWriter) Reset() {
 	sss.spamsumState.reset()
 	sss.SpamSum.reset()
 }
 
-func (sss *SpamStreamSum) Size() int {
+func (sss *SpamSumWriter) Size() int {
 	return SpamsumLength
 }
 
-// Write a byte slice to the SpamStreamSum.  Returns the length of the
+// Write a byte slice to the SpamSumWriter.  Returns the length of the
 // byte slice, and nil.
-func (sss *SpamStreamSum) Write(block []byte) (int, error) {
+func (sss *SpamSumWriter) Write(block []byte) (int, error) {
 	processBlock(block, len(block), &sss.spamsumState, &sss.SpamSum)
 	return len(block), nil
 }
 
-func (sss *SpamStreamSum) String() (result string) {
+func (sss *SpamSumWriter) String() (result string) {
 	writeTail(&sss.spamsumState, &sss.SpamSum)
 	result = sss.SpamSum.String()
 	// writeTail increments leftIndex and rightIndex, 'finishing'
@@ -66,7 +66,7 @@ func (sss *SpamStreamSum) String() (result string) {
 // contain a base64-encoded 6-bit hash for a `BlockSize()`-sized
 // block.  The block hashes continue up to the end of the slice, or up
 // to the first zero byte.
-func (sss *SpamStreamSum) Sum(block []byte) (result []byte) {
+func (sss *SpamSumWriter) Sum(block []byte) (result []byte) {
 	var cloneState spamsumState = sss.spamsumState
 	var cloneSum SpamSum = sss.SpamSum
 
