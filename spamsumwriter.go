@@ -13,14 +13,15 @@ type SpamSumWriter struct {
 	spamsumState
 }
 
-// New creates a SpamSumWriter with a fixed block size, that
-// implements the hash.Hash interface, and accepts an arbitrary number
-// of bytes through Write().  Note that the SpamSum algorithm does not
-// handle arbitrary length inputs well.  If the input stream is
-// significantly longer than SpamLength * blocksize, the tail end of
-// the stream will, for most intents and purposes, not generate hash
-// blocks.
-func New(blockSize uint32) hash.Hash {
+// StartFixedBlocksize creates a SpamSumWriter with a fixed block size,
+// that implements the hash.Hash interface, and accepts an arbitrary
+// number of bytes through Write().  Note that the SpamSum algorithm
+// does not handle arbitrary length inputs well.  If the input stream
+// is significantly longer than SpamLength * blocksize, the tail end
+// of the stream will, for most intents and purposes, not generate
+// hash blocks.  Please consider the HashBytes or HashReadSeeker
+// functions instead.
+func StartFixedBlocksize(blockSize uint32) hash.Hash {
 	sum := new(SpamSumWriter)
 
 	sum.SpamSum.reset()
