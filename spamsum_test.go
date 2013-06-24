@@ -26,5 +26,8 @@ func TestScan(t *testing.T) {
 		if !test.shouldfail && err != nil {
 			t.Errorf("Parse failed with error: %v", err)
 		}
+		if !test.shouldfail && sum.String() != test.input {
+			t.Errorf("scanned sum %s is not equal to input string %s\n", sum.String(), test.input)
+		}
 	}
 }

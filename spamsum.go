@@ -214,7 +214,7 @@ func (sum *SpamSum) reset() {
 
 func (sum *SpamSum) Scan(state fmt.ScanState, verb rune) error {
 	var blocksize int
-	var leftPart, rightPart, blockPart []byte
+	var leftPart, rightPart, blockPart, buffer []byte
 	var err error
 
 	if blockPart, err = state.Token(false, // do not skip spaces
@@ -238,14 +238,17 @@ func (sum *SpamSum) Scan(state fmt.ScanState, verb rune) error {
 		return errors.New("Invalid token delimiter")
 	}
 
-	if leftPart, err = state.Token(false, // do not skip spaces
+	if buffer, err = state.Token(false, // do not skip spaces
 		func(r rune) bool {
 			return (bytes.IndexRune([]byte(b64), r) != -1)
 		}); err != nil {
 		return err
-	} else if len(leftPart) > SpamsumLength {
+	} else if len(buffer) > SpamsumLength {
 		return errors.New("First base64 string too long")
 	}
+
+	leftPart = make([]byte, len(buffer))
+	copy(leftPart, buffer[:])
 
 	if r, _, err := state.ReadRune(); err != nil {
 		return err
@@ -253,14 +256,17 @@ func (sum *SpamSum) Scan(state fmt.ScanState, verb rune) error {
 		return errors.New("Invalid token delimiter")
 	}
 
-	if rightPart, err = state.Token(false, // do not skip spaces
+	if buffer, err = state.Token(false, // do not skip spaces
 		func(r rune) bool {
 			return (bytes.IndexRune([]byte(b64), r) != -1)
 		}); err != nil {
 		return err
-	} else if len(rightPart) > (SpamsumLength / 2) {
+	} else if len(buffer) > (SpamsumLength / 2) {
 		return errors.New("Second base64 string too long")
 	}
+
+	rightPart = make([]byte, len(buffer))
+	copy(rightPart[:], buffer)
 
 	sum.blocksize = uint32(blocksize)
 	copy(sum.leftPart[:], leftPart)

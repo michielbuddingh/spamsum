@@ -55,7 +55,7 @@ func TestHasCommonSubstring(t *testing.T) {
 	}
 }
 
-func TestEditDistance(t *testing.T) {
+func TfestEditDistance(t *testing.T) {
 	tests := []struct {
 		left, right   string
 		dist_expected int
@@ -68,6 +68,11 @@ func TestEditDistance(t *testing.T) {
 		{"", "1234567", 7},
 		{"", "", 0},
 		{"HIJKLMN", "JKLMNOPQRST", 8},
+		{"UVxeXup8VuH8rD//pcrHBrlG5FWgYJ70A",
+			"kVxeXup8VuH8rD//4crHBrlGXm5WgYJ70A", 7},
+		{"O4XuptH8D//pcrHmgfL", "e4XuptH8D//4crHMmUfL", 7},
+		{"kVxeXup8VuH8rD//4crHBrlGXm5WgYJ70A",
+			"kVxeXup8VuH8rD//4crHBrlGXm5WGYJ70A", 2},
 	}
 
 	for _, test := range tests {
@@ -85,7 +90,7 @@ func TestEditDistance(t *testing.T) {
 func TestCompare(t *testing.T) {
 	tests := []struct {
 		left, right         string
-		similarity_expected int
+		similarity_expected uint32
 	}{
 		// these are not values produced by the original spamsum
 		// score algorithm
@@ -93,11 +98,11 @@ func TestCompare(t *testing.T) {
 
 			"12582912:UVxeXup8VuH8rD//pcrHBrlG5FWgYJ70A:O4XuptH8D//pcrHmgfL",
 			"12582912:kVxeXup8VuH8rD//4crHBrlGXm5WgYJ70A:e4XuptH8D//4crHMmUfL",
-			85},
+			91},
 
 		{"12582912:kVxeXup8VuH8rD//4crHBrlGXm5WgYJ70A:e4XuptH8D//4crHMmUfL",
 			"12582912:kVxeXup8VuH8rD//4crHBrlGXm5WGYJ70A:e4XuptH8D//4crHMMUfL",
-			96},
+			99},
 	}
 
 	for _, test := range tests {
@@ -109,6 +114,8 @@ func TestCompare(t *testing.T) {
 			t.Errorf("Could not scan string %s, %v", test.right, err)
 		}
 		similarity := left.Compare(right)
-		println(similarity)
+		if similarity != test.similarity_expected {
+			t.Errorf("%s, %s\nSimilariy score should be %d, was %d", left, right, test.similarity_expected, similarity)
+		}
 	}
 }
