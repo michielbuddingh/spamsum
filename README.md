@@ -10,7 +10,7 @@ spamsum was developed by Andrew Tridgell to hash email messages for computationa
 The state of this package
 -------------------------
 
-* All (known) problems removed, needs more test coverage before it can be recommended for general consumption
+* Ready for production use.
 * It seems to generate results identical to that of the [spamsum tool](https://junkcode.samba.org/ftp/unpacked/junkcode/spamsum/) and [ssdeep](http://ssdeep.sf.net).  This has only been tested on a small number of files.
 * It is about twice as slow as the spamsum tool; about 40MB/s on a 3Ghz Core i3.  Use `gccgo` to make the speed difference disappear.
 * Fuzzy comparison may be slower than the spamsum tool.  Benchmark forthcoming.
@@ -41,3 +41,5 @@ If it is acceptable to set a fixed blocksize beforehand, the `SpamSumWriter` typ
 
 Use of this code is governed by version 2.0 or later of the Apache
 License, available at <http://www.apache.org/licenses/LICENSE-2.0>
+
+The `extra_tests` directory contains modified sources of the original [spamsum tool](https://junkcode.samba.org/ftp/unpacked/junkcode/spamsum/) as part of a regression test suite.  This code is joint licensed under the Perl Artistic License and the GPL version 2 or later.

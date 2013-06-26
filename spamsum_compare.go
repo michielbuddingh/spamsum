@@ -23,10 +23,10 @@ func (from SpamSum) Compare(to SpamSum) (similarity uint32) {
 		similarity = uint32(max(
 			score(from.leftPart[:from.leftIndex],
 				to.leftPart[:to.leftIndex],
-				int(to.blocksize)),
+				int(from.blocksize)),
 			score(from.rightPart[:from.rightIndex],
 				to.rightPart[:to.rightIndex],
-				int(to.blocksize/2))))
+				int(to.blocksize))))
 
 	} else if q == 2 {
 		similarity = uint32(score(
@@ -48,6 +48,9 @@ func score(from, to []byte, blocksize int) (score int) {
 	if !hasCommonSubstring(from, to) {
 		return 0
 	}
+
+	from = eliminateRepetition(from)
+	to = eliminateRepetition(to)
 
 	score = editDistance(from, to)
 
