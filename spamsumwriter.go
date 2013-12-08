@@ -5,7 +5,7 @@
 package spamsum
 
 import (
-	"hash"
+//	"hash"
 )
 
 type SpamSumWriter struct {
@@ -21,7 +21,7 @@ type SpamSumWriter struct {
 // of the stream will, for most intents and purposes, not generate
 // hash blocks.  Please consider the HashBytes or HashReadSeeker
 // functions instead.
-func StartFixedBlocksize(blockSize uint32) hash.Hash {
+func StartFixedBlocksize(blockSize uint32) *SpamSumWriter {
 	sum := new(SpamSumWriter)
 
 	sum.SpamSum.reset()

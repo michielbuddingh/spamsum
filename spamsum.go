@@ -56,9 +56,12 @@ func (ss *SpamSum) BlockSize() int {
 // the optimal block size in several passes.  Since adding more data
 // to such a sum would invalidate the block size calculation, this
 // SpamSum can not be added to.
-func HashBytes(b []byte) (*SpamSum, error) {
+func HashBytes(b []byte) *SpamSum {
 	wrapper := io.NewSectionReader(bytes.NewReader(b), 0, int64(len(b)))
-	return HashReadSeeker(wrapper, wrapper.Size())
+	// we discard the error, since they won't be produced
+	// for an in-memory byte slice
+	result, _ := HashReadSeeker(wrapper, wrapper.Size())
+	return result
 }
 
 // HashReadSeeker requires an implementation of io.ReadSeeker, and a length

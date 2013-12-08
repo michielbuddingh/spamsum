@@ -130,8 +130,16 @@ func TestCompare(t *testing.T) {
 		{"12582912:kVxeXup8VuH8rD//4crHBrlGXm5WgYJ70A:e4XuptH8D//4crHMmUfL",
 			"12582912:kVxeXup8VuH8rD//4crHBrlGXm5WGYJ70A:e4XuptH8D//4crHMMUfL",
 			99},
+		// different block sizes
 		{"96:aaUi0DTEnLMZMVd2jnEMyFrsdy9LdeGatg3Uogbqs0uBUZoXLn1IvwwDaK:aaf0PU8YMnElrcULdSWgbqs0uBb1IIK",
 			"192:aaf6PU8YMnElrcULdSWgbqs0uBb1IIAfsR6OZWjZDx:aaf6PUcYrfLdSWgms0uBb1TA0lZ8ZDx", 80},
+		// different block sizes reversed
+		{"192:aaf6PU8YMnElrcULdSWgbqs0uBb1IIAfsR6OZWjZDx:aaf6PUcYrfLdSWgms0uBb1TA0lZ8ZDx",
+			"96:aaUi0DTEnLMZMVd2jnEMyFrsdy9LdeGatg3Uogbqs0uBUZoXLn1IvwwDaK:aaf0PU8YMnElrcULdSWgbqs0uBb1IIK", 80},
+		// Uncomparable due to different sizes, should be 0
+		{"12582912:kVxeXup8VuH8rD//4crHBrlGXm5WgYJ70A:e4XuptH8D//4crHMmUfL",
+			"96:aaUi0DTEnLMZMVd2jnEMyFrsdy9LdeGatg3Uogbqs0uBUZoXLn1IvwwDaK:aaf0PU8YMnElrcULdSWgbqs0uBb1IIK", 0},
+
 		{"48:wX0GLBZET14EHWFIUXs0hPbaL3RdNhI6h0:wPLBS4EecWT6hdNhs",
 			"48:w+wNj5GLBX/8jrT14EHWFIUXs0hPbaL3qd9hI6h0:w+zLBX/w14EecWT6ad9hs", 77},
 		{"12:7iExTmgeXCcGYX1CRRX1PRRX88p0RRpdV/ISGcEvNOk+l/oX9QUopsAoX9QUopIo:2Ewd+NvN88y3GdkvBC+9lKMHhDh", "12:7iExTmgeXCcGYX1CRRX1PRRXrZGcEvNOk+l/oX9QUopsAoX9QUopIHKl057DRMHD:2Ewd+NvNrgdkvBC+9lKMHhDh", 88},
