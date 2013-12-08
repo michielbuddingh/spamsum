@@ -59,9 +59,6 @@ func score(from, to []byte, blocksize int) (score int) {
 
 	score = (score * 100) / 64
 
-	if score > 100 {
-		score = 0
-	}
 	score = 100 - score
 
 	maxscore := blocksize / minBlockSize * min(len(from), len(to))
