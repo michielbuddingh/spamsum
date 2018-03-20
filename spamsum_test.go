@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -34,6 +36,38 @@ func TestScan(t *testing.T) {
 	}
 }
 
+func TestHashReadSeeker(t *testing.T) {
+	tests := []struct {
+		filename string
+		expected string
+	}{
+		{"LAND.MAP", "768:tlBecdq6/+dgZUTp+gAdA3T9Y02xEFshHOl3O98FzbXfBfhPcGxGB3whvm9HvMB1:O"},
+		{"embedded_video_quicktime.doc", "192:o50PBwxGc+ZrnCe9pz1aZ8GHiLUd0935:G8cOz9pzJ3"},
+	}
+
+	for _, test := range tests {
+		path := filepath.Join("testdata", test.filename)
+		file, openerr := os.Open(path)
+		if openerr != nil {
+			t.Fatal(openerr)
+		}
+		defer file.Close()
+		stat, staterr := file.Stat()
+		if staterr != nil {
+			t.Fatal(staterr)
+		}
+
+		sum, sumerr := HashReadSeeker(file, stat.Size())
+		if sumerr != nil {
+			t.Fatal(sumerr)
+		}
+
+		if sum.String() != test.expected {
+			t.Errorf("Expected %s hashing %s, result was %v", test.expected, test.filename, sum)
+		}
+	}
+}
+
 func TestHashBytes(t *testing.T) {
 	tests := []struct {
 		seed      int64
@@ -41,18 +75,17 @@ func TestHashBytes(t *testing.T) {
 		blocksize uint32
 		expected  string
 	}{
-		{42, 16384, 384, "384:PnwCSZ6yE9r4UCZ1he34xas/E8AhHgdd2yM:PbSZ6yE9rGfExx"},
-		{1000, 2048, 48, "48:Zo+v/bCSly4VhreHwHJdkHTzF7sjBU1YuD/QtFsByxoSJW+QiLlH:uSWSFteQHJd+Tp79mqSqyCt+5LlH"},
-		{71268, 24, 3, "3:N0n6xmcFctn:7xmptn"},
+		{6065, 1024, 24, "24:D4JsKhbN85qJzgs+JLY4DffT9hhD6Wa333cRhDEPVreO:LKFN85qJMHJj1hkuDEPVeO"},
+		{1029936, 1025, 12, "12:RePpJA8PW0JP1uTMCa9qpRCwtnacOzIayUpkmp6v12qVVIFSpNKDrASjqPoOaY1L:UPPWE4TMY37nYzslTN2gTDZpaCji8ZmM"},
+		{1252877, 22624, 192, "192:V5cZcnyOVaMvLF4f8mkfu4u95tgALGPVxn8QhXSd1CsvQ+D3QMfFiz/uxuVge/7P:nIyvGkWN/iHImSc6vAzWgyeIiBzPbgzk"},
+		{1497046, 22624, 192, "192:BTBLFZFxOyNbTjMRjkLOBKiDKe2cRfzKQACMTsZGJRaYjx44gkX2iJ4nURozFp9S:B5OyN/QjkL6KiH2JgoNIDreMuxqRkxJZ"},
 	}
 
 	for _, test := range tests {
 		byteSlice := make([]byte, test.length)
 		generator := rand.New(rand.NewSource(test.seed))
 
-		for i := 0; i < test.length/4; i++ {
-			binary.BigEndian.PutUint32(byteSlice[i*4:], generator.Uint32())
-		}
+		generator.Read(byteSlice)
 
 		sum := HashBytes(byteSlice)
 

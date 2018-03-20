@@ -52,11 +52,6 @@ func (sss *SpamSumWriter) Write(block []byte) (int, error) {
 func (sss *SpamSumWriter) String() (result string) {
 	writeTail(&sss.spamsumState, &sss.SpamSum)
 	result = sss.SpamSum.String()
-	// writeTail increments leftIndex and rightIndex, 'finishing'
-	// the sum.  Since Write() is still allowed, we decrement
-	// again to return to an 'unfinished' state.
-	sss.leftIndex -= 1
-	sss.rightIndex -= 1
 	return
 }
 

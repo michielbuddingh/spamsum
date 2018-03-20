@@ -41,8 +41,8 @@ type SpamSum struct {
 func (ss *SpamSum) String() string {
 	return fmt.Sprintf("%d:%s:%s",
 		ss.blocksize,
-		string(ss.leftPart[:ss.leftIndex]),
-		string(ss.rightPart[:ss.rightIndex]))
+		string(ss.leftPart[:nonZeroLength(ss.leftPart[:])]),
+		string(ss.rightPart[:nonZeroLength(ss.rightPart[:])]))
 }
 
 // BlockSize returns the approximate block size used in this sum.
@@ -107,7 +107,7 @@ source_iteration:
 
 		writeTail(&sss, sum)
 
-		if sum.blocksize > minBlockSize && (sum.leftIndex-1) < (SpamsumLength/2) {
+		if sum.blocksize > minBlockSize && sum.leftIndex < (SpamsumLength/2) {
 			sum.blocksize /= 2
 		} else {
 			break source_iteration
@@ -184,8 +184,6 @@ func writeTail(sss *spamsumState, sum *SpamSum) {
 	if roll != 0 {
 		sum.leftPart[sum.leftIndex] = b64[sss.left%64]
 		sum.rightPart[sum.rightIndex] = b64[sss.right%64]
-		sum.leftIndex += 1
-		sum.rightIndex += 1
 	}
 }
 
@@ -213,6 +211,16 @@ func (sum *SpamSum) reset() {
 	}
 
 	sum.leftIndex, sum.rightIndex = 0, 0
+}
+
+func nonZeroLength(array []byte) (r int) {
+	for i := range array {
+		if array[i] == 0 {
+			break
+		}
+		r += 1
+	}
+	return r
 }
 
 func (sum *SpamSum) Scan(state fmt.ScanState, verb rune) error {

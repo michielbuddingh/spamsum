@@ -5,8 +5,11 @@
 package spamsum
 
 import (
+	"bufio"
 	"encoding/binary"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -36,29 +39,62 @@ func TestWriter(t *testing.T) {
 }
 
 func TestWriterIntermediate(t *testing.T) {
-	generator := rand.New(rand.NewSource(3181))
-	writer := StartFixedBlocksize(768)
-
-	for i := 0; i < 4096; i++ {
-		binary.Write(writer, binary.BigEndian, generator.Uint32())
+	tests := []struct {
+		filename             string
+		initialLength        int
+		expectedIntermediate string
+		expectedFinal        string
+		blockSize            uint32
+	}{
+		{
+			"LAND.MAP",
+			131072,
+			"768:tlBecdq6/+dgZUTp+gAdAm:3",
+			"768:tlBecdq6/+dgZUTp+gAdA3T9Y02xEFshHOl3O98FzbXfBfhPcGxGB3whvm9HvMB1:O",
+			768,
+		},
+		{
+			"embedded_video_quicktime.doc",
+			12288,
+			"192:o50PBwxGc+Zrnn:G8cOb",
+			"192:o50PBwxGc+ZrnCe9pz1aZ8GHiLUd0935:G8cOz9pzJ3",
+			192,
+		},
 	}
 
-	expectedIntermediate := "768:Mz4Rjllf5YbJAdWsgdL7rPjcYK1TkTN:MzsjjfqbJkzcLPjcYEW"
-	actualIntermediate := writer.String()
+	for _, test := range tests {
+		writer := StartFixedBlocksize(test.blockSize)
 
-	if actualIntermediate != expectedIntermediate {
-		t.Errorf("Expected %v, actual %v", expectedIntermediate, actualIntermediate)
-	}
+		path := filepath.Join("testdata", test.filename)
+		file, openerr := os.Open(path)
+		if openerr != nil {
+			t.Fatal(openerr)
+		}
+		defer file.Close()
 
-	for i := 0; i < 4096; i++ {
-		binary.Write(writer, binary.BigEndian, generator.Uint32())
-	}
+		reader := bufio.NewReader(file)
 
-	expectedFinal := "768:Mz4Rjllf5YbJAdWsgdL7rPjcYK1TkTQSPNZHrHmwGS8VUSYy20b9n6TZd:MzsjjfqbJkzcLPjcYEcNpXG7VUSR2Q6n"
-	actualFinal := writer.String()
+		buf4k := make([]byte, test.initialLength)
+		_, readerr := reader.Read(buf4k)
+		if readerr != nil {
+			t.Fatal(readerr)
+		}
 
-	if actualFinal != expectedFinal {
-		t.Errorf("Expected %v, actual %v", expectedFinal, actualFinal)
+		writer.Write(buf4k)
+
+		if writer.String() != test.expectedIntermediate {
+			t.Errorf("Expected intermediate result %s, got %s",
+				test.expectedIntermediate,
+				writer.String())
+		}
+
+		reader.WriteTo(writer)
+
+		if writer.String() != test.expectedFinal {
+			t.Errorf("Expected final result %s, got %s",
+				test.expectedFinal,
+				writer.String())
+		}
 	}
 }
 

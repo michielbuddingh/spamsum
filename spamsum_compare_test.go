@@ -158,7 +158,7 @@ func TestCompare(t *testing.T) {
 		}
 		similarity := left.Compare(right)
 		if similarity != test.similarity_expected {
-			t.Errorf("%s, %s\nSimilariy score should be %d, was %d", left, right, test.similarity_expected, similarity)
+			t.Errorf("%v, %v\nSimilariy score should be %d, was %d", left, right, test.similarity_expected, similarity)
 		}
 	}
 }
